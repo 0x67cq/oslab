@@ -1,4 +1,4 @@
-!
+
 !	setup.s		(C) 1991 Linus Torvalds
 !
 ! setup.s is responsible for getting the system data from the BIOS,
@@ -33,6 +33,24 @@ start:
 ! ok, the read went well so we get current cursor position and save it for
 ! posterity.
 
+! Print some inane message
+
+	mov	ah,#0x03		! read cursor pos
+	xor	bh,bh
+	int	0x10
+	
+! es:bp -> msg2 physics memory address
+    mov ax,#SETUPSEG
+    mov es,ax
+
+	mov	cx,#25
+	mov	bx,#0x0007		! page 0, attribute 7 (normal)
+	mov	bp,#msg2
+	mov	ax,#0x1301		! write string, move cursor
+	int	0x10
+
+
+    
 	mov	ax,#INITSEG	! this is done in bootsect already, but...
 	mov	ds,ax
 	mov	ah,#0x03	! read cursor pos
@@ -44,6 +62,83 @@ start:
 	mov	ah,#0x88
 	int	0x15
 	mov	[2],ax
+print_mem:
+	mov	ah,#0x03		! read cursor pos
+	xor	bh,bh
+	int	0x10
+	
+    mov ax,#SETUPSEG
+    mov es,ax
+
+	mov	cx,#17
+	mov	bx,#0x0007		! page 0, attribute 7 (normal)
+	mov	bp,#msg3
+	mov	ax,#0x1301		! write string, move cursor
+	int	0x10
+
+    mov	ah,#0x03		! read cursor pos
+	xor	bh,bh
+	int	0x10
+	
+    mov	ax,#INITSEG	
+    mov es,ax
+
+print_1:
+    mov ax,[2]
+    mov al,ah
+    mov ah,#0x0e
+    and al,#0xf0
+    shr al,#0x4
+    add al,#0x30
+    cmp al,#0x3a
+    jb out_put1
+    add al,#0x7
+    int 0x10
+    jmp print_2
+out_put1:
+    int 0x10
+
+print_2:
+    mov ax,[2]
+    mov al,ah
+    mov ah,#0x0e
+    and al,#0x0f
+    add al,#0x30
+    cmp al,#0x3a
+    jb out_put2
+    add al,#0x7
+    int 0x10
+    jmp print_3
+out_put2:
+    int 0x10
+
+print_3:
+    mov ax,[2]
+    mov ah,#0x0e
+    and al,#0xf0
+    shr al,#0x4
+    add al,#0x30
+    cmp al,#0x3a
+    jb out_put3
+    add al,#0x7
+    int 0x10
+    jmp print_4
+out_put3:
+    int 0x10
+
+print_4:
+    mov ax,[2]
+    mov ah,#0x0e
+    and al,#0x0f
+    add al,#0x30
+    cmp al,#0x3a
+    jb out_put4
+    add al,#0x7
+    int 0x10
+    jmp dead_loop
+out_put4:
+    int 0x10
+
 
 ! Get video-card data:
 
@@ -111,6 +206,20 @@ is_disk1:
 
 	mov	ax,#0x0000
 	cld			! 'direction'=0, movs moves forward
+
+
+
+
+
+! don't come in system
+dead_loop:
+    jmp dead_loop
+
+msg3:
+	.byte 13,10
+	.ascii "Memory size is:"
+
+
 do_move:
 	mov	es,ax		! destination segment
 	add	ax,#0x1000
@@ -220,7 +329,12 @@ idt_48:
 gdt_48:
 	.word	0x800		! gdt limit=2048, 256 GDT entries
 	.word	512+gdt,0x9	! gdt base = 0X9xxxx
-	
+msg2:
+	.byte 13,10
+	.ascii "Now we are in SETUP"
+	.byte 13,10,13,10
+
+
 .text
 endtext:
 .data
